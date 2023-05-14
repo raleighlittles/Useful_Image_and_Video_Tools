@@ -9,6 +9,14 @@ import typing
 
 def combine_videos(input_dir: str, input_formats: typing.List, output_prefix: str):
 
+    # Before doing anything, make sure that ffmpeg is installed
+    ffmpeg_test_cmd = subprocess.Popen("ffmpeg --version", shell=True)
+    ffmpeg_test_cmd.wait()
+
+    if (ffmpeg_test_cmd.returncode != 0):
+        print("[ERROR] ffmpeg test command failed, please make sure it's installed and in your PATH")
+        return 1
+
     video_resolutions_and_filenames = collections.defaultdict(list)
 
     # Iterate over files in directory, creating a dictionary where the keys are resolutions and the values are lists of filenames for videos having that resolution
@@ -74,8 +82,7 @@ def combine_videos(input_dir: str, input_formats: typing.List, output_prefix: st
             print("[ERROR] Invalid number of videos found for resolution {}".format(video_resolution))
             return 2
 
-
-if __name__ == "__main":
+if __name__ == "__main__":
     argparse_parser = argparse.ArgumentParser()
     argparse_parser.add_argument(
         "-i", "--input-dir", type=str, help="The directory where video files are located")
