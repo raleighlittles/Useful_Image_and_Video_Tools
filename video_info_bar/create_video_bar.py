@@ -32,11 +32,28 @@ def create_video_of_duration_from_image(image_filename, width, height, duration,
     return blank_video_filename
 
 
+def draw_info_onto_video(input_video_filename) -> str:
+
+    output_video_filename = "output.mp4"
+
+    draw_info_on_video_cmd = f"ffmpeg -i {input_video_filename} -vf \"drawtext=fontfile=Arial.ttf: text='%{{pts \:flt}} | %{{frame_num}}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=white: fontsize=20: box=1: boxcolor=black: boxborderw=5\" {output_video_filename}"
+
+    if subprocess.run(draw_info_on_video_cmd, shell=True).returncode != 0:
+        print(f"Error drawing info onto video. Command ran was: {draw_info_on_video_cmd}")
+        sys.exit(4)
+
+    return output_video_filename
+
+
 def create_video_metadata_bar(width, height, duration, frame_rate) -> str:
 
     img_filename = create_empty_image(width, height)
 
     video_filename = create_video_of_duration_from_image(img_filename, width, height, duration, frame_rate, "video.mp4")
+
+    final_video = draw_info_onto_video(video_filename)
+
+
 
 
 
