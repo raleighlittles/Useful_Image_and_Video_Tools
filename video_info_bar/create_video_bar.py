@@ -2,7 +2,8 @@ import argparse
 import os
 import subprocess
 import sys
-
+import pdb
+import re
 
 def create_empty_image(width, height) -> str:
     """
@@ -32,11 +33,11 @@ def create_video_of_duration_from_image(image_filename, width, height, duration,
     return blank_video_filename
 
 
-def draw_info_onto_video(input_video_filename) -> str:
+def draw_info_onto_video(input_video_filename, additional_info) -> str:
 
     output_video_filename = "output.mp4"
 
-    draw_info_on_video_cmd = f"ffmpeg -i {input_video_filename} -vf \"drawtext=fontfile=Arial.ttf: text='%{{pts \:flt}} | %{{frame_num}}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=white: fontsize=20: box=1: boxcolor=black: boxborderw=5\" {output_video_filename}"
+    draw_info_on_video_cmd = f"ffmpeg -i {input_video_filename} -vf \"drawtext=fontfile=Arial.ttf: text='%{{pts \:flt}} | %{{frame_num}} \n {additional_info}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=white: fontsize=20: box=1: boxcolor=black: boxborderw=5\" {output_video_filename}"
 
     if subprocess.run(draw_info_on_video_cmd, shell=True).returncode != 0:
         print(f"Error drawing info onto video. Command ran was: {draw_info_on_video_cmd}")
@@ -45,15 +46,20 @@ def draw_info_onto_video(input_video_filename) -> str:
     return output_video_filename
 
 
-def create_video_metadata_bar(width, height, duration, frame_rate) -> str:
+def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_filename) -> str:
 
     img_filename = create_empty_image(width, height)
 
     video_filename = create_video_of_duration_from_image(img_filename, width, height, duration, frame_rate, "video.mp4")
 
-    final_video = draw_info_onto_video(video_filename)
+    extra_onscreen_txt = ""
+    
+    with open(input_txt_filename, 'r') as input_txt_file:
+        extra_onscreen_txt = input_txt_file.readlines()
 
-
+    #pdb.set_trace()
+    #final_video = draw_info_onto_video(video_filename, " ".join(extra_onscreen_txt))
+    final_video = draw_info_onto_video(video_filename, " ".join(x.replace("\r", " ").replace("\n", " ") for x in extra_onscreen_txt))
 
 
 
@@ -65,9 +71,9 @@ if __name__ == "__main__":
     argparse_parser.add_argument("-v", "--height", type=int, required=True, help="Height/vertical measurement of video")
     argparse_parser.add_argument("-d", "--duration", type=int, required=True, help="Video duration")
     argparse_parser.add_argument("-f", "--frame-rate", type=str, required=True, help="The frame rate of the input video, for the output video to match")
-    # argparse_parser.add_argument  TEXT FILE LOCATION FOR TITLE/LOCATION/ETC
+    argparse_parser.add_argument("-t", "--text_filename", type=str, help="A text file containing text to be added to the video")
 
     argparse_args = argparse_parser.parse_args()
 
-    create_video_metadata_bar(argparse_args.width, argparse_args.height, argparse_args.duration, argparse_args.frame_rate)
+    create_video_metadata_bar(argparse_args.width, argparse_args.height, argparse_args.duration, argparse_args.frame_rate, argparse_args.text_filename)
 
