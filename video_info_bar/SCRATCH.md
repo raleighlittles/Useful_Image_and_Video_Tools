@@ -15,3 +15,9 @@ ffmpeg -i in.webm -filter_complex "drawtext=fontfile=/usr/share/fonts/truetype/a
 https://stackoverflow.com/questions/15364861/frame-number-overlay-with-ffmpeg
 
 ffmpeg -i input -vf "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=black: fontsize=20: box=1: boxcolor=white: boxborderw=5" -c:a copy output
+
+# Stitch videos vertically
+
+ffmpeg -i input0 -i input1 -filter_complex vstack=inputs=2 output
+
+https://stackoverflow.com/a/33764934/1576548

@@ -62,6 +62,10 @@ def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_fil
     final_video = draw_info_onto_video(video_filename, " ".join(x.replace("\r", " ").replace("\n", " ") for x in extra_onscreen_txt))
 
 
+def stitch_video_bar(original_filename, video_bar_filename) -> str:
+
+    
+
 
 if __name__ == "__main__":
     
