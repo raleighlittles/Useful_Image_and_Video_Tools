@@ -2,6 +2,7 @@ import argparse
 import os
 import subprocess
 import sys
+import json
 import pdb
 import re
 
@@ -54,14 +55,66 @@ def stitch_video_bar(original_filename, video_bar_filename):
         print(f"Error running ffmpeg command to stitch videos: {combine_vids_vertically_cmd}")
         sys.exit(5)
 
+def get_input_video_params(input_video_filename) -> tuple:
+    """
+    Get the input video's:
+    (1) width
+    (2) height
+    (3) duration
+    (4) frame rate
+    """
+
+    ffprobe_get_video_props_cmd = f"ffprobe -v error -select_streams v -show_entries stream=width,height,duration,r_frame_rate -of json {input_video_filename}"
+
+    # Outputs something like:
+    """
+    {
+    "programs": [
+
+    ],
+    "streams": [
+        {
+            "width": 640,
+            "height": 480,
+            "r_frame_rate": "25/1",
+            "duration": "16.600000"
+        }
+    ]
+    }
+    """
+
+    video_props_json = subprocess.run(ffprobe_get_video_props_cmd.split(), stdout=subprocess.PIPE).stdout.decode().strip()
+
+    # '0' to indicate the first (and only!) video stream,
+    # while multi-video-stream files are technically supported by FFMPEG, we don't allow them
+    # here since they're nonsensical
+    video_props = json.loads(video_props_json)["streams"][0]
+
+
+    video_width = int(video_props["width"])
+    video_height = int(video_props["height"])
+    video_frame_rate = eval(video_props["r_frame_rate"])
+    video_duration = float(video_props["duration"])
+
+    return tuple([video_width, video_height, video_duration, video_frame_rate])
 
 # ----- End helper functions
 
-def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_filename, input_video_filename) -> str:
+def create_video_metadata_bar_from_file(input_txt_filename, input_video_filename):
+
+    width, height, duration, frame_rate = get_input_video_params(input_video_filename)
+
+    metadata_video_filename = create_video_metadata_bar(width, height, duration, frame_rate, input_txt_filename)
+    
+    stitch_video_bar(input_video_filename, metadata_video_filename)
+
+
+def create_video_metadata_bar(width, height, duration, framerate, input_txt_filename) -> str:
 
     img_filename = create_empty_image(width, height)
 
-    video_filename = create_video_of_duration_from_image(img_filename, width, height, duration, frame_rate, "video.mp4")
+    # The metadata bar is 1/5 of the height of the original video
+    video_filename = create_video_of_duration_from_image(img_filename, width, height / 5, duration, framerate, "video.mp4")
 
     extra_onscreen_txt = ""
     
@@ -70,24 +123,26 @@ def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_fil
 
     metadata_video_filename = draw_info_onto_video(video_filename, " ".join(x.replace("\r", " ").replace("\n", " ") for x in extra_onscreen_txt))
 
-    stitch_video_bar(input_video_filename, metadata_video_filename)
-
-
-
+    return metadata_video_filename
 
 
 if __name__ == "__main__":
     
     argparse_parser = argparse.ArgumentParser()
 
-    argparse_parser.add_argument("-w", "--width", type=int, required=True, help="Width of video (in pixels)")
-    argparse_parser.add_argument("-v", "--height", type=int, required=True, help="Height/vertical measurement of video")
-    argparse_parser.add_argument("-d", "--duration", type=int, required=True, help="Video duration")
-    argparse_parser.add_argument("-f", "--frame-rate", type=str, required=True, help="The frame rate of the input video, for the output video to match")
+    argparse_parser.add_argument("-w", "--width", type=int, help="Width of video (in pixels)")
+    argparse_parser.add_argument("-v", "--height", type=int, help="Height/vertical measurement of video")
+    argparse_parser.add_argument("-d", "--duration", type=int, help="Video duration")
+    argparse_parser.add_argument("-f", "--frame-rate", type=str, help="The frame rate of the input video, for the output video to match")
     argparse_parser.add_argument("-t", "--text_filename", type=str, help="A text file containing text to be added to the video")
     argparse_parser.add_argument("-i", "--input-video-filename", type=str, help="The video to attach the metadata data to")
 
     argparse_args = argparse_parser.parse_args()
 
-    create_video_metadata_bar(argparse_args.width, argparse_args.height, argparse_args.duration, argparse_args.frame_rate, argparse_args.text_filename, argparse_args.input_video_filename)
+    if argparse_args.input_video_filename:
+        create_video_metadata_bar_from_file(argparse_args.text_filename, argparse_args.input_video_filename)
+
+    else:
+        # Manual mode
+        create_video_metadata_bar(argparse_args.width, argparse_args.height, argparse_args.duration, argparse_args.frame_rate, argparse_args.text_filename)
 
