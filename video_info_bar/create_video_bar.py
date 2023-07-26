@@ -27,7 +27,7 @@ def create_video_of_duration_from_image(image_filename, width, height, duration,
     generate_empty_video_cmd = f"ffmpeg -loop 1 -i {image_filename} -c:v libx264 -t {duration} -r {float(framerate)} {blank_video_filename}"
 
     if subprocess.run(generate_empty_video_cmd.split(), stdout=subprocess.PIPE).returncode != 0:
-        print(f"Error running ffmpeg command: {generate_empty_video_cmd}")
+        print(f"Error running ffmpeg command to create blank video: {generate_empty_video_cmd}")
         sys.exit(3)
 
     return blank_video_filename
@@ -35,7 +35,7 @@ def create_video_of_duration_from_image(image_filename, width, height, duration,
 
 def draw_info_onto_video(input_video_filename, additional_info) -> str:
 
-    output_video_filename = "output.mp4"
+    output_video_filename = "metadata_video.mp4"
 
     draw_info_on_video_cmd = f"ffmpeg -i {input_video_filename} -vf \"drawtext=fontfile=Arial.ttf: text='%{{pts \:flt}} | %{{frame_num}} \n {additional_info}': start_number=1: x=(w-tw)/2: y=h-(2*lh): fontcolor=white: fontsize=20: box=1: boxcolor=black: boxborderw=5\" {output_video_filename}"
 
@@ -45,8 +45,19 @@ def draw_info_onto_video(input_video_filename, additional_info) -> str:
 
     return output_video_filename
 
+def stitch_video_bar(original_filename, video_bar_filename):
 
-def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_filename) -> str:
+    # This command performs a re-encoding, because "filtering and streamcopy cannot be used together"
+    combine_vids_vertically_cmd = f"ffmpeg -i {original_filename} -i {video_bar_filename} -filter_complex vstack=inputs=2 output.mp4"
+
+    if subprocess.run(combine_vids_vertically_cmd.split(), stdout=subprocess.PIPE).returncode != 0:
+        print(f"Error running ffmpeg command to stitch videos: {combine_vids_vertically_cmd}")
+        sys.exit(5)
+
+
+# ----- End helper functions
+
+def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_filename, input_video_filename) -> str:
 
     img_filename = create_empty_image(width, height)
 
@@ -57,14 +68,12 @@ def create_video_metadata_bar(width, height, duration, frame_rate, input_txt_fil
     with open(input_txt_filename, 'r') as input_txt_file:
         extra_onscreen_txt = input_txt_file.readlines()
 
-    #pdb.set_trace()
-    #final_video = draw_info_onto_video(video_filename, " ".join(extra_onscreen_txt))
-    final_video = draw_info_onto_video(video_filename, " ".join(x.replace("\r", " ").replace("\n", " ") for x in extra_onscreen_txt))
+    metadata_video_filename = draw_info_onto_video(video_filename, " ".join(x.replace("\r", " ").replace("\n", " ") for x in extra_onscreen_txt))
+
+    stitch_video_bar(input_video_filename, metadata_video_filename)
 
 
-def stitch_video_bar(original_filename, video_bar_filename) -> str:
 
-    
 
 
 if __name__ == "__main__":
@@ -76,8 +85,9 @@ if __name__ == "__main__":
     argparse_parser.add_argument("-d", "--duration", type=int, required=True, help="Video duration")
     argparse_parser.add_argument("-f", "--frame-rate", type=str, required=True, help="The frame rate of the input video, for the output video to match")
     argparse_parser.add_argument("-t", "--text_filename", type=str, help="A text file containing text to be added to the video")
+    argparse_parser.add_argument("-i", "--input-video-filename", type=str, help="The video to attach the metadata data to")
 
     argparse_args = argparse_parser.parse_args()
 
-    create_video_metadata_bar(argparse_args.width, argparse_args.height, argparse_args.duration, argparse_args.frame_rate, argparse_args.text_filename)
+    create_video_metadata_bar(argparse_args.width, argparse_args.height, argparse_args.duration, argparse_args.frame_rate, argparse_args.text_filename, argparse_args.input_video_filename)
 
