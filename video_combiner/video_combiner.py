@@ -10,7 +10,7 @@ import typing
 def combine_videos(input_dir: str, input_formats: typing.List, output_prefix: str):
 
     # Before doing anything, make sure that ffmpeg is installed
-    ffmpeg_test_cmd = subprocess.Popen("ffmpeg --version", shell=True)
+    ffmpeg_test_cmd = subprocess.Popen("ffmpeg -version", shell=True)
     ffmpeg_test_cmd.wait()
 
     if (ffmpeg_test_cmd.returncode != 0):
