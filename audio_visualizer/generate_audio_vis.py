@@ -16,20 +16,26 @@ def main_generate_visualization(input_audio_filename : str, output_folder : str)
         thr.start()
 
 
-def generate_vectorscope(audio_filename, output_video_filename):
+def generate_vectorscope(audio_filename, output_video_filename) -> int:
     """
     https://en.wikipedia.org/wiki/Vectorscope
     """
     
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]avectorscope=draw=line\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_vectorscope.mp4"
 
+    return subprocess.run(cmd, shell=True).returncode
+
 def generate_spectrum(audio_filename, output_video_filename):
     
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]showspectrum=mode=separate\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_spectrum.mp4"
 
+    return subprocess.run(cmd, shell=True).returncode
+
 def generate_waves_diagram(audio_filename, output_video_filename):
     
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]showwaves=split_channels=1:draw=full\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_waves.mp4"
+
+    return subprocess.run(cmd, shell=True).returncode
 
 def generate_graph(audio_filename):
     pass # only supported by ffmpeg v6.0+
@@ -38,9 +44,13 @@ def generate_bitscope(audio_filename, output_video_filename):
 
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]abitscope=rate=60\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_bitscope.mp4"
 
+    return subprocess.run(cmd, shell=True).returncode
+
 def generate_audio_histogram(audio_filename, output_video_filename):
 
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]ahistogram=dmode=separate\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_histogram.mp4"
+
+    return subprocess.run(cmd, shell=True).returncode
 
 def generate_constant_q_transform(audio_filename, output_video_filename):
     
@@ -50,9 +60,13 @@ def generate_constant_q_transform(audio_filename, output_video_filename):
     
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]showcqt=csp=bt709\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_frequency-spectrum.mp4"
 
+    return subprocess.run(cmd, shell=True).returncode
+
 def generate_power_spectrum(audio_filename, output_video_filename):
 
     cmd = f"ffmpeg -i {audio_filename} -filter_complex \"[0:a]showfreqs=cmode=separate\" -map 0:a -c:v libx265 -x265-params lossless=1 {output_video_filename}_power-spectrum.mp4"
+
+    return subprocess.run(cmd, shell=True).returncode
 
 
 ## ------------------------------------------------------ ##
@@ -66,3 +80,5 @@ if __name__ == "__main__":
                                  help="The folder where the created videos will be stored")
 
     argparse_args = argparse_parser.parse_args()
+
+    main_generate_visualization(argparse_args.input_audio_filename, argparse_args.output_folder)
